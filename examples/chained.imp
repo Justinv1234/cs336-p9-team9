@@ -1,0 +1,6 @@
+# PII propagates through a chain of assignments
+email := get_email()
+a := email
+b := a
+c := b + " extra"
+log(c)

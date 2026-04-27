@@ -1,0 +1,5 @@
+email := get_email()
+name := get_name()
+user_info := email + " - " + name
+log(user_info)  # Privacy leak!
+send_analytics(name)  # Another leak!

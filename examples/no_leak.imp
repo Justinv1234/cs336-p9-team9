@@ -1,0 +1,4 @@
+# No PII reaches any sink
+name := get_name()
+greeting := "Hello, user!"
+log(greeting)

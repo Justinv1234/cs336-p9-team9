@@ -1,0 +1,16 @@
+# Multiple PII types flowing to multiple sinks
+ssn := get_ssn()
+phone := get_phone()
+address := get_address()
+name := get_name()
+
+# ssn and name merged into one variable
+record := ssn + " " + name
+
+# safe string - no PII
+greeting := "Hello, welcome!"
+
+log(record)            # leaks ssn + name
+send_analytics(phone)  # leaks phone
+send_to_api(address)   # leaks address
+log(greeting)          # clean - no leak
