@@ -1,6 +1,8 @@
 # cs336-p9-team9
 ## Privacy Leakage via "Taint Lite" — CS 336 Project 9
 
+> **Documentation website:** open `docs/index.html` in a browser for the full interactive guide.
+
 ---
 
 ## Team Members
@@ -17,20 +19,19 @@
 
 ## Project Overview
 
-A simplified taint analysis tool for a small IMP-Core dialect.  
-The tool tracks PII (names, emails, SSNs, etc.) through variable assignments and reports when tainted data reaches a dangerous sink such as `log`, `send_analytics`, or `send_to_api`.
+A taint analysis tool that tracks PII (names, emails, SSNs, etc.) through variable assignments and reports when tainted data reaches a dangerous sink such as `log`, `send_analytics`, or `send_to_api`.
 
-- **Project Number:** 9  
-- **Difficulty:** Easy  
-- **Language Variant:** A (IMP-Core)  
-- **Privacy Focus:** Unintentional PII exposure  
+Now supports:
+- **IMP-Core** (`.imp`) — the original toy language
+- **Python** (`.py`) — real-world Python source files via the built-in `ast` module
+- **External policy files** — define your own sources and sinks in JSON without editing source code
 
 ---
 
 ## Prerequisites
 
 - Python 3.9 or later (tested on 3.11)
-- No external runtime dependencies — the analyzer uses only the Python standard library
+- No external runtime dependencies — uses only the Python standard library
 
 To run the tests you also need `pytest`:
 
@@ -45,43 +46,40 @@ pip3 install pytest
 ```
 cs336-p9-team9/
 ├── src/
-│   ├── ast_nodes.py   # AST dataclasses
-│   ├── lexer.py       # Tokenizer
-│   ├── parser.py      # Recursive-descent parser
-│   ├── taint.py       # Taint propagation engine
-│   ├── reporter.py    # Output formatter
-│   └── main.py        # CLI entry point
+│   ├── ast_nodes.py        # AST dataclasses (IMP)
+│   ├── lexer.py            # Tokenizer (IMP)
+│   ├── parser.py           # Recursive-descent parser (IMP)
+│   ├── taint.py            # Taint propagation engine (IMP)
+│   ├── python_analyzer.py  # Taint frontend for Python source files
+│   ├── policy.py           # External policy loader
+│   ├── reporter.py         # Output formatter
+│   └── main.py             # CLI entry point
 ├── tests/
 │   ├── test_lexer.py
 │   ├── test_parser.py
-│   └── test_taint.py
+│   ├── test_taint.py
+│   ├── test_policy.py
+│   └── test_python_analyzer.py
 ├── examples/
-│   ├── basic.imp      # Spec example (email + name → log + analytics)
-│   ├── multi_sink.imp # SSN/phone/address across three sinks
-│   ├── no_leak.imp    # Clean program — no leaks expected
-│   └── chained.imp    # PII propagated through a 3-variable chain
+│   ├── basic.imp               # Spec example (email + name → log + analytics)
+│   ├── multi_sink.imp          # SSN/phone/address across three sinks
+│   ├── no_leak.imp             # Clean program — no leaks expected
+│   ├── chained.imp             # PII propagated through a 3-variable chain
+│   ├── webapp_leak.py          # Python example — 3 leaks
+│   ├── webapp_clean.py         # Python example — no leaks
+│   ├── custom_policy_demo.py   # Demonstrates custom policy sources/sinks
+│   └── custom_policy.json      # Example JSON policy file
+├── docs/
+│   └── index.html          # User-friendly documentation website
 └── README.md
 ```
-
----
-
-## Build Instructions
-
-No compilation step required — pure Python.
-
-```bash
-git clone https://github.com/INSERT-YOUR-ORG/cs336-p9-team9.git
-cd cs336-p9-team9
-```
-
-That's it. No build step needed.
 
 ---
 
 ## How to Run the Tool
 
 ```bash
-python3 src/main.py <program.imp>
+python3 src/main.py <program.imp|program.py> [--policy policy.json]
 ```
 
 The tool exits with code `0` if no leaks are found, or `1` if any leaks are detected.
@@ -98,33 +96,15 @@ python3 -m pytest tests/ -v
 Expected output:
 
 ```
-collected 23 items
+collected 50 items
 
-tests/test_lexer.py::test_simple_assignment_tokens PASSED
-tests/test_lexer.py::test_string_literal PASSED
-tests/test_lexer.py::test_comment_skipped PASSED
-tests/test_lexer.py::test_line_numbers PASSED
-tests/test_lexer.py::test_plus_and_comma PASSED
-tests/test_lexer.py::test_unexpected_char_raises PASSED
-tests/test_parser.py::test_parse_assignment PASSED
-tests/test_parser.py::test_parse_sink_call PASSED
-tests/test_parser.py::test_parse_binary_op PASSED
-tests/test_parser.py::test_parse_multiple_statements PASSED
-tests/test_parser.py::test_parse_comment_ignored PASSED
-tests/test_parser.py::test_parse_call_with_args PASSED
-tests/test_parser.py::test_parse_line_numbers PASSED
-tests/test_taint.py::test_spec_example PASSED
-tests/test_taint.py::test_no_pii_no_leak PASSED
-tests/test_taint.py::test_pii_not_at_sink_no_leak PASSED
-tests/test_taint.py::test_chained_propagation PASSED
-tests/test_taint.py::test_union_propagation PASSED
-tests/test_taint.py::test_multiple_sinks PASSED
-tests/test_taint.py::test_send_to_api_is_sink PASSED
-tests/test_taint.py::test_clean_log_after_pii_assigned PASSED
-tests/test_taint.py::test_recommendation_log PASSED
-tests/test_taint.py::test_recommendation_analytics PASSED
+tests/test_lexer.py::...              6 passed
+tests/test_parser.py::...             7 passed
+tests/test_policy.py::...             8 passed
+tests/test_python_analyzer.py::...   19 passed
+tests/test_taint.py::...             10 passed
 
-23 passed in 0.03s
+50 passed in 0.08s
 ```
 
 ---
@@ -133,21 +113,10 @@ tests/test_taint.py::test_recommendation_analytics PASSED
 
 ### Example 1 — Spec example (`examples/basic.imp`)
 
-**Program:**
-```
-email := get_email()
-name := get_name()
-user_info := email + " - " + name
-log(user_info)          # Privacy leak!
-send_analytics(name)    # Another leak!
-```
-
-**Command:**
 ```bash
 python3 src/main.py examples/basic.imp
 ```
 
-**Output:**
 ```
 PII LEAK at line 4
   Sink: log
@@ -160,76 +129,74 @@ PII LEAK at line 5
   Recommendation: Anonymize before sending to analytics
 ```
 
----
+### Example 2 — Python webapp with leaks
 
-### Example 2 — Multiple sinks (`examples/multi_sink.imp`)
-
-**Command:**
 ```bash
-python3 src/main.py examples/multi_sink.imp
+python3 src/main.py examples/webapp_leak.py
 ```
 
-**Output:**
 ```
-PII LEAK at line 13
-  Sink: log
-  PII types exposed: {name, ssn}
+PII LEAK at line 22
+  Sink: info
+  PII types exposed: {email}
   Recommendation: Redact PII before logging
 
-PII LEAK at line 14
+PII LEAK at line 25
   Sink: send_analytics
-  PII types exposed: {phone}
+  PII types exposed: {name}
   Recommendation: Anonymize before sending to analytics
 
-PII LEAK at line 15
+PII LEAK at line 29
   Sink: send_to_api
-  PII types exposed: {address}
+  PII types exposed: {ssn}
   Recommendation: Remove PII before sending to external sink
 ```
 
----
+### Example 3 — No leak
 
-### Example 3 — No leak (`examples/no_leak.imp`)
-
-**Command:**
 ```bash
 python3 src/main.py examples/no_leak.imp
+# → No PII leaks detected.
+
+python3 src/main.py examples/webapp_clean.py
+# → No PII leaks detected.
 ```
 
-**Output:**
-```
-No PII leaks detected.
-```
+### Example 4 — Custom policy
 
----
-
-### Example 4 — Chained propagation (`examples/chained.imp`)
-
-**Program:**
-```
-email := get_email()
-a := email
-b := a
-c := b + " extra"
-log(c)
-```
-
-**Command:**
 ```bash
-python3 src/main.py examples/chained.imp
-```
+# Without policy: kafka_publish and s3_upload are unknown → no leaks
+python3 src/main.py examples/custom_policy_demo.py
 
-**Output:**
-```
-PII LEAK at line 6
-  Sink: log
-  PII types exposed: {email}
-  Recommendation: Redact PII before logging
+# With policy: 2 leaks detected
+python3 src/main.py examples/custom_policy_demo.py --policy examples/custom_policy.json
 ```
 
 ---
 
-## PII Sources Recognized
+## External Policy Files
+
+Define your own sources and sinks in a JSON file and pass it with `--policy`.  
+The file **merges** with built-in defaults — only list what you want to add or override.
+
+```json
+{
+  "sources": {
+    "fetch_credit_card":   "credit_card",
+    "get_passport_number": "passport",
+    "load_biometric":      ["biometric", "sensitive"]
+  },
+  "sinks": {
+    "kafka_publish": "Remove PII before publishing to Kafka",
+    "s3_upload":     "Encrypt PII before uploading to S3"
+  },
+  "sink_patterns": ["log", "analytics", "api", "publish", "upload"]
+}
+```
+
+---
+
+## PII Sources Recognized (built-in)
 
 | Function | PII Tag |
 |---|---|
@@ -241,7 +208,7 @@ PII LEAK at line 6
 | `get_dob()` | `date_of_birth` |
 | `get_user_id()` | `user_id` |
 
-## Sinks Recognized
+## Sinks Recognized (built-in)
 
 | Function | Recommendation |
 |---|---|

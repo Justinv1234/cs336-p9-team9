@@ -1,0 +1,22 @@
+{
+  "_comment": "Custom policy for a healthcare app. Extends the built-in defaults.",
+
+  "sources": {
+    "fetch_credit_card":   "credit_card",
+    "get_passport_number": "passport",
+    "db_query_medical_id": "medical_id",
+    "load_biometric":      ["biometric", "sensitive"]
+  },
+
+  "sinks": {
+    "kafka_publish":  "Remove PII before publishing to Kafka",
+    "s3_upload":      "Encrypt PII before uploading to S3",
+    "slack_notify":   "Redact PII before sending to Slack",
+    "export_to_csv":  "Anonymize PII before exporting to CSV"
+  },
+
+  "sink_patterns": [
+    "log", "analytics", "api", "server", "report", "track", "monitor",
+    "publish", "upload", "notify", "export", "kafka", "s3", "slack"
+  ]
+}
