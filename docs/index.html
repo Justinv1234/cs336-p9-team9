@@ -4,673 +4,201 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Taint Lite — Privacy Leak Detector</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script>hljs.highlightAll();</script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:        #0f1117;
-      --surface:   #1a1d27;
-      --border:    #2a2d3a;
-      --accent:    #7c6af7;
-      --accent2:   #4ea8de;
-      --green:     #3fb950;
-      --red:       #f85149;
-      --yellow:    #d29922;
-      --text:      #e6edf3;
-      --muted:     #8b949e;
-      --radius:    10px;
-    }
-
-    html { scroll-behavior: smooth; }
-
     body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: Georgia, serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #222;
       line-height: 1.7;
-      font-size: 15px;
     }
-
-    a { color: var(--accent2); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    /* ---- NAV ---- */
-    nav {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(15,17,23,0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 58px;
+    h1 { font-size: 1.8rem; margin-bottom: 4px; }
+    h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+    h3 { font-size: 1rem; margin-top: 1.4rem; }
+    p, li { color: #444; }
+    a { color: #0066cc; }
+    code {
+      font-family: monospace;
+      background: #f4f4f4;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: .9em;
     }
-    .nav-brand { font-weight: 700; font-size: 1.05rem; color: var(--text); display: flex; align-items: center; gap: .5rem; }
-    .nav-brand span { color: var(--accent); }
-    .nav-links { display: flex; gap: 1.6rem; }
-    .nav-links a { color: var(--muted); font-size: .88rem; font-weight: 500; }
-    .nav-links a:hover { color: var(--text); text-decoration: none; }
-
-    /* ---- LAYOUT ---- */
-    .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
-
-    /* ---- HERO ---- */
-    .hero {
-      background: linear-gradient(135deg, #141625 0%, #0f1117 60%);
-      border-bottom: 1px solid var(--border);
-      padding: 5rem 1.5rem 4rem;
-      text-align: center;
-    }
-    .badge {
-      display: inline-block;
-      background: rgba(124,106,247,.15);
-      color: var(--accent);
-      border: 1px solid rgba(124,106,247,.35);
-      border-radius: 20px;
-      padding: .25rem .85rem;
-      font-size: .78rem;
-      font-weight: 600;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-      margin-bottom: 1.2rem;
-    }
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 3rem);
-      font-weight: 700;
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
-    .hero h1 em { font-style: normal; color: var(--accent); }
-    .hero p { color: var(--muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto 2rem; }
-    .btn-group { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; gap: .45rem;
-      padding: .6rem 1.35rem;
-      border-radius: 7px;
-      font-size: .9rem; font-weight: 600;
-      cursor: pointer; transition: opacity .15s;
-    }
-    .btn:hover { opacity: .85; text-decoration: none; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-
-    /* ---- SECTIONS ---- */
-    section { padding: 3.5rem 0; border-bottom: 1px solid var(--border); }
-    section:last-child { border-bottom: none; }
-    .section-label {
-      font-size: .72rem; font-weight: 700;
-      color: var(--accent); letter-spacing: .1em;
-      text-transform: uppercase; margin-bottom: .6rem;
-    }
-    h2 { font-size: 1.65rem; font-weight: 700; margin-bottom: .5rem; }
-    h3 { font-size: 1.15rem; font-weight: 600; margin: 2rem 0 .6rem; }
-    p { color: var(--muted); margin-bottom: 1rem; }
-    p strong, li strong { color: var(--text); }
-
-    /* ---- FEATURE GRID ---- */
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1rem; margin-top: 2rem;
-    }
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.4rem 1.2rem;
-    }
-    .feature-icon { font-size: 1.5rem; margin-bottom: .6rem; }
-    .feature-card h4 { font-size: .95rem; font-weight: 600; margin-bottom: .3rem; color: var(--text); }
-    .feature-card p { font-size: .85rem; margin: 0; }
-
-    /* ---- CODE BLOCKS ---- */
     pre {
-      border-radius: var(--radius);
-      margin: 1rem 0;
-      overflow-x: auto;
-      font-size: .83rem;
-    }
-    pre code { font-family: 'JetBrains Mono', monospace !important; }
-    .code-label {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: var(--radius) var(--radius) 0 0;
-      padding: .45rem .9rem;
-      font-size: .75rem;
-      color: var(--muted);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .code-label + pre { border-radius: 0 0 var(--radius) var(--radius); margin-top: 0; }
-
-    /* ---- TERMINAL ---- */
-    .terminal {
-      background: #0d1117;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1rem 1.2rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .82rem;
-      margin: 1rem 0;
-      overflow-x: auto;
-    }
-    .terminal .prompt { color: var(--green); user-select: none; }
-    .terminal .cmd { color: var(--text); }
-    .terminal .out { color: var(--muted); }
-    .terminal .leak { color: var(--red); font-weight: 600; }
-    .terminal .ok   { color: var(--green); }
-    .terminal .line { display: block; line-height: 1.6; }
-
-    /* ---- INLINE CODE ---- */
-    code:not(pre code) {
-      background: rgba(124,106,247,.12);
-      color: #b392f0;
+      background: #f4f4f4;
+      border: 1px solid #ddd;
       border-radius: 4px;
-      padding: .1em .35em;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .85em;
-    }
-
-    /* ---- TABLES ---- */
-    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .88rem; }
-    th { text-align: left; padding: .55rem .85rem; background: var(--surface); border: 1px solid var(--border); font-weight: 600; color: var(--text); }
-    td { padding: .5rem .85rem; border: 1px solid var(--border); color: var(--muted); }
-    td:first-child { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: .82rem; }
-
-    /* ---- STEPS ---- */
-    .steps { counter-reset: step; list-style: none; padding: 0; }
-    .steps li {
-      counter-increment: step;
-      display: flex; gap: 1rem; align-items: flex-start;
-      padding: .85rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .steps li:last-child { border-bottom: none; }
-    .steps li::before {
-      content: counter(step);
-      flex-shrink: 0;
-      width: 28px; height: 28px;
-      background: rgba(124,106,247,.18);
-      color: var(--accent);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: .8rem; font-weight: 700;
-    }
-
-    /* ---- TEST CASE CARDS ---- */
-    .test-grid { display: grid; gap: 1.2rem; margin-top: 1.5rem; }
-    .test-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .test-card-header {
-      padding: .75rem 1rem;
-      background: rgba(255,255,255,.03);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .test-card-header strong { font-size: .9rem; }
-    .tag {
-      font-size: .72rem; font-weight: 600; border-radius: 4px;
-      padding: .15rem .5rem; text-transform: uppercase; letter-spacing: .04em;
-    }
-    .tag-leak { background: rgba(248,81,73,.15); color: var(--red); }
-    .tag-clean { background: rgba(63,185,80,.15); color: var(--green); }
-    .tag-policy { background: rgba(78,168,222,.15); color: var(--accent2); }
-    .test-card-body { padding: 1rem; }
-    .test-card-body p { font-size: .85rem; margin-bottom: .5rem; }
-
-    /* ---- ALERT ---- */
-    .alert {
-      background: rgba(210,153,34,.08);
-      border: 1px solid rgba(210,153,34,.35);
-      border-radius: var(--radius);
-      padding: .9rem 1.1rem;
-      color: var(--yellow);
+      padding: 12px 14px;
+      overflow-x: auto;
       font-size: .88rem;
-      margin: 1.2rem 0;
+      line-height: 1.5;
     }
-
-    /* ---- FOOTER ---- */
-    footer {
-      padding: 2rem 1.5rem;
-      text-align: center;
-      color: var(--muted);
-      font-size: .82rem;
-    }
+    table { border-collapse: collapse; width: 100%; font-size: .9rem; margin: .8rem 0; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+    th { background: #f4f4f4; }
+    .subtitle { color: #666; margin-top: 0; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 2rem 0; }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-brand">🔍 <span>Taint</span>Lite</div>
-  <div class="nav-links">
-    <a href="#install">Install</a>
-    <a href="#usage">Usage</a>
-    <a href="#policy">Policy</a>
-    <a href="#python">Python</a>
-    <a href="#tests">Tests</a>
-  </div>
-</nav>
+<h1>Taint Lite</h1>
+<p class="subtitle">Privacy leak detector for IMP-Core and Python &mdash; CS 336 Project 9, Team 9</p>
 
-<!-- HERO -->
-<div class="hero">
-  <div class="badge">CS 336 · Project 9 · Team 9</div>
-  <h1>Detect <em>PII Leaks</em><br/>Before They Ship</h1>
-  <p>
-    <strong>Taint Lite</strong> is a static taint-analysis tool that tracks
-    Personally Identifiable Information through your code and reports every path
-    where sensitive data reaches a dangerous sink — in IMP-Core <em>and</em> real Python.
-  </p>
-  <div class="btn-group">
-    <a href="#install" class="btn btn-primary">Get Started</a>
-    <a href="https://github.com/Justinv1234/cs336-p9-team9" class="btn btn-secondary" target="_blank">
-      View on GitHub
-    </a>
-  </div>
-</div>
+<hr />
 
-<div class="container">
+<h2>What it does</h2>
+<p>
+  Taint Lite performs static taint analysis to detect when Personally Identifiable Information (PII)
+  flows from a <strong>source</strong> (e.g. <code>get_email()</code>) to a dangerous
+  <strong>sink</strong> (e.g. <code>log()</code>). It supports both IMP-Core
+  (<code>.imp</code>) and real Python (<code>.py</code>) source files, and accepts a JSON
+  policy file to define custom sources and sinks.
+</p>
 
-  <!-- FEATURES -->
-  <section>
-    <div class="section-label">What it does</div>
-    <h2>Everything you need to catch PII leaks</h2>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🔎</div>
-        <h4>Forward Taint Analysis</h4>
-        <p>Tracks sensitive data from <em>sources</em> (e.g. <code>get_email()</code>) through every assignment to <em>sinks</em> (e.g. <code>log()</code>).</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🐍</div>
-        <h4>Real Python Support</h4>
-        <p>Analyzes actual <code>.py</code> files using Python's built-in AST — f-strings, dicts, chained assignments, function bodies, and more.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📋</div>
-        <h4>External Policy Files</h4>
-        <p>Define your own sources and sinks in a JSON file. Add domain-specific functions like <code>kafka_publish</code> or <code>fetch_credit_card</code> without touching the code.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">💡</div>
-        <h4>Actionable Recommendations</h4>
-        <p>Every leak comes with a concrete fix: <em>"Redact PII before logging"</em>, <em>"Anonymize before analytics"</em>, etc.</p>
-      </div>
-    </div>
-  </section>
+<h2>Installation</h2>
+<p>Requires Python 3.9+. No external runtime dependencies.</p>
+<pre>git clone https://github.com/Justinv1234/cs336-p9-team9.git
+cd cs336-p9-team9
+pip3 install pytest   # only needed to run tests</pre>
 
-  <!-- INSTALL -->
-  <section id="install">
-    <div class="section-label">Installation</div>
-    <h2>Up and running in 60 seconds</h2>
-    <p><strong>Requirements:</strong> Python 3.9+ (no external runtime dependencies).</p>
+<h2>Usage</h2>
+<pre>python3 src/main.py &lt;file.imp | file.py&gt; [--policy policy.json]</pre>
+<p>Exits with code <code>0</code> if no leaks found, <code>1</code> if leaks are detected.</p>
 
-    <ol class="steps">
-      <li>
-        <div>
-          <strong>Clone the repository</strong>
-          <div class="terminal">
-            <span class="line"><span class="prompt">$ </span><span class="cmd">git clone https://github.com/Justinv1234/cs336-p9-team9.git</span></span>
-            <span class="line"><span class="prompt">$ </span><span class="cmd">cd cs336-p9-team9</span></span>
-          </div>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Install pytest</strong> (only needed to run the test suite)
-          <div class="terminal">
-            <span class="line"><span class="prompt">$ </span><span class="cmd">pip3 install pytest</span></span>
-          </div>
-        </div>
-      </li>
-      <li>
-        <div>
-          <strong>Verify the install</strong> — run the built-in test suite
-          <div class="terminal">
-            <span class="line"><span class="prompt">$ </span><span class="cmd">python3 -m pytest tests/ -v</span></span>
-            <span class="line"><span class="out">......................................................</span></span>
-            <span class="line"><span class="ok">50 passed in 0.08s</span></span>
-          </div>
-        </div>
-      </li>
-    </ol>
-  </section>
+<h2>Examples</h2>
 
-  <!-- USAGE -->
-  <section id="usage">
-    <div class="section-label">Usage</div>
-    <h2>Running the analyzer</h2>
-
-    <h3>Basic syntax</h3>
-    <div class="terminal">
-      <span class="line"><span class="prompt">$ </span><span class="cmd">python3 src/main.py &lt;file.imp|file.py&gt; [--policy policy.json]</span></span>
-    </div>
-    <p>The tool exits with code <code>0</code> if no leaks are found, or <code>1</code> if leaks are detected — suitable for use in CI pipelines.</p>
-
-    <h3>Example 1 — IMP basic leak (<code>examples/basic.imp</code>)</h3>
-    <div class="code-label">examples/basic.imp</div>
-    <pre><code class="language-bash">email := get_email()
-name := get_name()
+<h3>1. Basic IMP leak</h3>
+<pre># examples/basic.imp
+email := get_email()
+name  := get_name()
 user_info := email + " - " + name
-log(user_info)          # Privacy leak!
-send_analytics(name)    # Another leak!</code></pre>
+log(user_info)         # Privacy leak!
+send_analytics(name)   # Another leak!</pre>
 
-    <div class="terminal">
-      <span class="line"><span class="prompt">$ </span><span class="cmd">python3 src/main.py examples/basic.imp</span></span>
-      <span class="line"><span class="leak">PII LEAK at line 4</span></span>
-      <span class="line"><span class="out">  Sink: log</span></span>
-      <span class="line"><span class="out">  PII types exposed: {email, name}</span></span>
-      <span class="line"><span class="out">  Recommendation: Redact PII before logging</span></span>
-      <span class="line">&nbsp;</span>
-      <span class="line"><span class="leak">PII LEAK at line 5</span></span>
-      <span class="line"><span class="out">  Sink: send_analytics</span></span>
-      <span class="line"><span class="out">  PII types exposed: {name}</span></span>
-      <span class="line"><span class="out">  Recommendation: Anonymize before sending to analytics</span></span>
-    </div>
+<pre>$ python3 src/main.py examples/basic.imp
 
-    <h3>Example 2 — Python webapp leak (<code>examples/webapp_leak.py</code>)</h3>
-    <div class="code-label">examples/webapp_leak.py (excerpt)</div>
-    <pre><code class="language-python">email = get_email(user_id)
+PII LEAK at line 4
+  Sink: log
+  PII types exposed: {email, name}
+  Recommendation: Redact PII before logging
+
+PII LEAK at line 5
+  Sink: send_analytics
+  PII types exposed: {name}
+  Recommendation: Anonymize before sending to analytics</pre>
+
+<h3>2. Python webapp leak</h3>
+<pre># examples/webapp_leak.py
+email = get_email(user_id)
 name  = get_name(user_id)
 ssn   = get_ssn(user_id)
 
-logging.info(f"Processing request for {email}")    # LEAK 1
-send_analytics({"user": name, "action": "login"})  # LEAK 2
-send_to_api("https://internal/verify", data={"ssn": ssn})  # LEAK 3</code></pre>
+logging.info(f"Processing request for {email}")   # LEAK
+send_analytics({"user": name})                     # LEAK
+send_to_api("https://internal/verify", data={"ssn": ssn})  # LEAK</pre>
 
-    <div class="terminal">
-      <span class="line"><span class="prompt">$ </span><span class="cmd">python3 src/main.py examples/webapp_leak.py</span></span>
-      <span class="line"><span class="leak">PII LEAK at line 22</span></span>
-      <span class="line"><span class="out">  Sink: info  &nbsp; PII types exposed: {email}</span></span>
-      <span class="line"><span class="out">  Recommendation: Redact PII before logging</span></span>
-      <span class="line">&nbsp;</span>
-      <span class="line"><span class="leak">PII LEAK at line 25</span></span>
-      <span class="line"><span class="out">  Sink: send_analytics  &nbsp; PII types exposed: {name}</span></span>
-      <span class="line"><span class="out">  Recommendation: Anonymize before sending to analytics</span></span>
-      <span class="line">&nbsp;</span>
-      <span class="line"><span class="leak">PII LEAK at line 29</span></span>
-      <span class="line"><span class="out">  Sink: send_to_api  &nbsp; PII types exposed: {ssn}</span></span>
-      <span class="line"><span class="out">  Recommendation: Remove PII before sending to external sink</span></span>
-    </div>
+<pre>$ python3 src/main.py examples/webapp_leak.py
 
-    <h3>Example 3 — No leak (<code>examples/no_leak.imp</code>)</h3>
-    <div class="terminal">
-      <span class="line"><span class="prompt">$ </span><span class="cmd">python3 src/main.py examples/no_leak.imp</span></span>
-      <span class="line"><span class="ok">No PII leaks detected.</span></span>
-    </div>
+PII LEAK at line 25
+  Sink: logging.info
+  PII types exposed: {email}
+  Recommendation: Redact PII before logging
 
-    <h3>Example 4 — Chained propagation (<code>examples/chained.imp</code>)</h3>
-    <p>Taint follows data through a 3-variable chain — even indirect leaks are caught.</p>
-    <div class="code-label">examples/chained.imp</div>
-    <pre><code class="language-bash">email := get_email()
+PII LEAK at line 28
+  Sink: send_analytics
+  PII types exposed: {name}
+  Recommendation: Anonymize before sending to analytics
+
+PII LEAK at line 36
+  Sink: send_to_api
+  PII types exposed: {ssn}
+  Recommendation: Remove PII before sending to external sink</pre>
+
+<h3>3. No leak</h3>
+<pre>$ python3 src/main.py examples/no_leak.imp
+No PII leaks detected.</pre>
+
+<h3>4. Chained propagation</h3>
+<pre># examples/chained.imp
+email := get_email()
 a := email
 b := a
 c := b + " extra"
-log(c)              # leak: email reached log through a → b → c</code></pre>
+log(c)</pre>
 
-    <div class="terminal">
-      <span class="line"><span class="prompt">$ </span><span class="cmd">python3 src/main.py examples/chained.imp</span></span>
-      <span class="line"><span class="leak">PII LEAK at line 5</span></span>
-      <span class="line"><span class="out">  Sink: log  &nbsp; PII types exposed: {email}</span></span>
-      <span class="line"><span class="out">  Recommendation: Redact PII before logging</span></span>
-    </div>
-  </section>
+<pre>$ python3 src/main.py examples/chained.imp
 
-  <!-- POLICY -->
-  <section id="policy">
-    <div class="section-label">External Policy</div>
-    <h2>Customize sources &amp; sinks with a policy file</h2>
-    <p>
-      The built-in policy covers common PII functions and sinks, but every
-      application is different. Pass a <strong>JSON policy file</strong> via
-      <code>--policy</code> to extend the defaults with your own sources and sinks.
-    </p>
+PII LEAK at line 5
+  Sink: log
+  PII types exposed: {email}
+  Recommendation: Redact PII before logging</pre>
 
-    <div class="alert">
-      ⚡ Policy files <strong>merge</strong> with built-in defaults — you only need to list
-      what you want to add or override.
-    </div>
-
-    <h3>Policy file schema</h3>
-    <div class="code-label">examples/custom_policy.json</div>
-    <pre><code class="language-json">{
+<h3>5. Custom policy</h3>
+<pre># examples/custom_policy.json
+{
   "sources": {
-    "fetch_credit_card":   "credit_card",
-    "get_passport_number": "passport",
-    "load_biometric":      ["biometric", "sensitive"]
+    "fetch_credit_card": "credit_card",
+    "get_passport_number": "passport"
   },
   "sinks": {
     "kafka_publish": "Remove PII before publishing to Kafka",
-    "s3_upload":     "Encrypt PII before uploading to S3",
-    "slack_notify":  "Redact PII before sending to Slack"
-  },
-  "sink_patterns": [
-    "log", "analytics", "api", "server",
-    "publish", "upload", "notify", "export"
-  ]
-}</code></pre>
+    "s3_upload": "Encrypt PII before uploading to S3"
+  }
+}</pre>
 
-    <h3>Using the policy</h3>
-    <div class="terminal">
-      <span class="line"><span class="prompt">$ </span><span class="cmd">python3 src/main.py examples/custom_policy_demo.py --policy examples/custom_policy.json</span></span>
-      <span class="line"><span class="leak">PII LEAK at line 18</span></span>
-      <span class="line"><span class="out">  Sink: kafka_publish  &nbsp; PII types exposed: {credit_card}</span></span>
-      <span class="line"><span class="out">  Recommendation: Remove PII before publishing to Kafka</span></span>
-      <span class="line">&nbsp;</span>
-      <span class="line"><span class="leak">PII LEAK at line 21</span></span>
-      <span class="line"><span class="out">  Sink: s3_upload  &nbsp; PII types exposed: {passport}</span></span>
-      <span class="line"><span class="out">  Recommendation: Encrypt PII before uploading to S3</span></span>
-    </div>
+<pre>$ python3 src/main.py examples/custom_policy_demo.py --policy examples/custom_policy.json
 
-    <h3>Field reference</h3>
-    <table>
-      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
-      <tr><td>sources</td><td>object</td><td>Map of <code>function_name → tag</code> or <code>function_name → [tag, ...]</code>. Merged with defaults.</td></tr>
-      <tr><td>sinks</td><td>object</td><td>Map of <code>function_name → recommendation_message</code>. Merged with defaults.</td></tr>
-      <tr><td>sink_patterns</td><td>array</td><td>List of substrings — any function whose name contains one is treated as a sink. <em>Replaces</em> the default list when provided.</td></tr>
-    </table>
-  </section>
+PII LEAK at line 20
+  Sink: kafka_publish
+  PII types exposed: {credit_card}
+  Recommendation: Remove PII before publishing to Kafka
 
-  <!-- PYTHON SUPPORT -->
-  <section id="python">
-    <div class="section-label">Python Support</div>
-    <h2>Analyze real Python source files</h2>
-    <p>
-      Point the tool at any <code>.py</code> file. The Python frontend uses
-      Python's built-in <code>ast</code> module to parse the code and runs the
-      same taint engine as the IMP-Core analyzer.
-    </p>
+PII LEAK at line 23
+  Sink: s3_upload
+  PII types exposed: {passport}
+  Recommendation: Encrypt PII before uploading to S3</pre>
 
-    <h3>Supported Python patterns</h3>
-    <table>
-      <tr><th>Pattern</th><th>Example</th><th>Notes</th></tr>
-      <tr><td>Simple assignment</td><td><code>x = get_email(uid)</code></td><td>Direct source call</td></tr>
-      <tr><td>Variable propagation</td><td><code>y = x</code></td><td>Taint carried forward</td></tr>
-      <tr><td>String concatenation</td><td><code>s = a + b</code></td><td>Union of taints</td></tr>
-      <tr><td>f-strings</td><td><code>f"Hello {name}"</code></td><td>Taint from embedded vars</td></tr>
-      <tr><td>Dict / list literals</td><td><code>{"user": email}</code></td><td>Taint from values</td></tr>
-      <tr><td>Augmented assignment</td><td><code>msg += name</code></td><td>Accumulates taint</td></tr>
-      <tr><td>Attribute method calls</td><td><code>logging.info(x)</code></td><td>Method name matched</td></tr>
-      <tr><td>Function bodies</td><td><code>def f(): log(x)</code></td><td>Recursively analyzed</td></tr>
-      <tr><td>If / for / while</td><td><code>if cond: log(x)</code></td><td>Both branches checked</td></tr>
-    </table>
-  </section>
+<h2>Running the tests</h2>
+<pre>python3 -m pytest tests/ -v</pre>
+<p>51 tests across 5 modules, all passing.</p>
 
-  <!-- TESTS -->
-  <section id="tests">
-    <div class="section-label">Test Cases</div>
-    <h2>50 tests across 5 modules</h2>
-    <p>Run the full suite with: <code>python3 -m pytest tests/ -v</code></p>
+<table>
+  <tr><th>File</th><th>Tests</th><th>Covers</th></tr>
+  <tr><td>test_lexer.py</td><td>6</td><td>Tokenizer: comments, line numbers, operators</td></tr>
+  <tr><td>test_parser.py</td><td>7</td><td>Parser: assignments, sink calls, binary ops, AST nodes</td></tr>
+  <tr><td>test_taint.py</td><td>10</td><td>IMP taint engine: propagation, sinks, recommendations</td></tr>
+  <tr><td>test_policy.py</td><td>8</td><td>Policy loading: merge, custom sources/sinks, error handling</td></tr>
+  <tr><td>test_python_analyzer.py</td><td>20</td><td>Python analyzer: f-strings, dicts, chaining, custom policy</td></tr>
+</table>
 
-    <div class="test-grid">
+<h2>Built-in sources &amp; sinks</h2>
 
-      <!-- Lexer -->
-      <div class="test-card">
-        <div class="test-card-header">
-          <strong>test_lexer.py — 6 tests</strong>
-          <span class="tag tag-clean">Lexer</span>
-        </div>
-        <div class="test-card-body">
-          <p>Tests the tokenizer that converts IMP source text into a token stream.</p>
-          <table>
-            <tr><th>Test</th><th>What it verifies</th></tr>
-            <tr><td>test_simple_assignment_tokens</td><td>IDENT + ASSIGN + IDENT token sequence</td></tr>
-            <tr><td>test_string_literal</td><td>String tokens include surrounding quotes</td></tr>
-            <tr><td>test_comment_skipped</td><td><code># comments</code> produce no tokens</td></tr>
-            <tr><td>test_line_numbers</td><td>Tokens carry correct line numbers</td></tr>
-            <tr><td>test_plus_and_comma</td><td>PLUS and COMMA tokens recognized</td></tr>
-            <tr><td>test_unexpected_char_raises</td><td>Illegal character raises SyntaxError</td></tr>
-          </table>
-        </div>
-      </div>
+<table>
+  <tr><th>Source function</th><th>PII tag</th></tr>
+  <tr><td>get_email()</td><td>email</td></tr>
+  <tr><td>get_name()</td><td>name</td></tr>
+  <tr><td>get_ssn()</td><td>ssn</td></tr>
+  <tr><td>get_phone()</td><td>phone</td></tr>
+  <tr><td>get_address()</td><td>address</td></tr>
+  <tr><td>get_dob()</td><td>date_of_birth</td></tr>
+  <tr><td>get_user_id()</td><td>user_id</td></tr>
+</table>
 
-      <!-- Parser -->
-      <div class="test-card">
-        <div class="test-card-header">
-          <strong>test_parser.py — 7 tests</strong>
-          <span class="tag tag-clean">Parser</span>
-        </div>
-        <div class="test-card-body">
-          <p>Tests the recursive-descent parser that builds an AST from tokens.</p>
-          <table>
-            <tr><th>Test</th><th>What it verifies</th></tr>
-            <tr><td>test_parse_assignment</td><td><code>x := expr</code> → Assignment node</td></tr>
-            <tr><td>test_parse_sink_call</td><td><code>log(x)</code> → SinkCall node</td></tr>
-            <tr><td>test_parse_binary_op</td><td><code>a + b</code> → BinaryOp node</td></tr>
-            <tr><td>test_parse_multiple_statements</td><td>Program with several statements parsed in order</td></tr>
-            <tr><td>test_parse_comment_ignored</td><td>Inline comments do not affect AST</td></tr>
-            <tr><td>test_parse_call_with_args</td><td>Multi-argument calls parsed correctly</td></tr>
-            <tr><td>test_parse_line_numbers</td><td>AST nodes carry the right source line</td></tr>
-          </table>
-        </div>
-      </div>
+<table>
+  <tr><th>Sink function</th><th>Recommendation</th></tr>
+  <tr><td>log</td><td>Redact PII before logging</td></tr>
+  <tr><td>send_analytics</td><td>Anonymize before sending to analytics</td></tr>
+  <tr><td>send_to_api</td><td>Remove PII before sending to external sink</td></tr>
+  <tr><td>print_log</td><td>Redact PII before logging</td></tr>
+  <tr><td>write_log</td><td>Redact PII before logging</td></tr>
+  <tr><td>post_to_server</td><td>Remove PII before sending to external sink</td></tr>
+</table>
+<p>Any function whose name contains <code>log</code>, <code>analytics</code>, <code>api</code>, <code>server</code>, <code>report</code>, <code>track</code>, or <code>monitor</code> is also treated as a sink.</p>
 
-      <!-- Taint IMP -->
-      <div class="test-card">
-        <div class="test-card-header">
-          <strong>test_taint.py — 10 tests</strong>
-          <span class="tag tag-leak">Taint · IMP</span>
-        </div>
-        <div class="test-card-body">
-          <p>Tests the core taint propagation engine on IMP-Core programs.</p>
-          <table>
-            <tr><th>Test</th><th>What it verifies</th></tr>
-            <tr><td>test_spec_example</td><td>email + name flow to log and analytics (2 leaks)</td></tr>
-            <tr><td>test_no_pii_no_leak</td><td>Literal strings never trigger a leak</td></tr>
-            <tr><td>test_pii_not_at_sink_no_leak</td><td>PII assigned but never passed to a sink → clean</td></tr>
-            <tr><td>test_chained_propagation</td><td>Taint survives a → b → c chain</td></tr>
-            <tr><td>test_union_propagation</td><td>BinaryOp unions both operand taints</td></tr>
-            <tr><td>test_multiple_sinks</td><td>Multiple sink calls each produce a separate Leak</td></tr>
-            <tr><td>test_send_to_api_is_sink</td><td>Pattern-matched sinks are detected</td></tr>
-            <tr><td>test_clean_log_after_pii_assigned</td><td>Non-tainted arg to sink → no leak</td></tr>
-            <tr><td>test_recommendation_log</td><td>"Redact" message for log sinks</td></tr>
-            <tr><td>test_recommendation_analytics</td><td>"Anonymize" message for analytics sinks</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <!-- Policy -->
-      <div class="test-card">
-        <div class="test-card-header">
-          <strong>test_policy.py — 8 tests</strong>
-          <span class="tag tag-policy">Policy</span>
-        </div>
-        <div class="test-card-body">
-          <p>Tests loading and merging of external JSON policy files.</p>
-          <table>
-            <tr><th>Test</th><th>What it verifies</th></tr>
-            <tr><td>test_default_policy_has_builtin_sources</td><td>Defaults include get_email, get_name, …</td></tr>
-            <tr><td>test_default_policy_has_builtin_sinks</td><td>Defaults include log, send_analytics, …</td></tr>
-            <tr><td>test_load_adds_custom_source_single_tag</td><td>Single-string tag parsed into frozenset</td></tr>
-            <tr><td>test_load_adds_custom_source_multi_tag</td><td>Array of tags parsed correctly</td></tr>
-            <tr><td>test_load_adds_custom_sink</td><td>New sink added; built-ins preserved</td></tr>
-            <tr><td>test_load_replaces_sink_patterns</td><td>sink_patterns field replaces defaults</td></tr>
-            <tr><td>test_load_merges_all_fields</td><td>All three sections merged in one load</td></tr>
-            <tr><td>test_load_file_not_found</td><td>Missing file raises FileNotFoundError</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <!-- Python Analyzer -->
-      <div class="test-card">
-        <div class="test-card-header">
-          <strong>test_python_analyzer.py — 19 tests</strong>
-          <span class="tag tag-leak">Taint · Python</span>
-        </div>
-        <div class="test-card-body">
-          <p>Tests the Python-language taint analyzer across a variety of real Python patterns.</p>
-          <table>
-            <tr><th>Test</th><th>What it verifies</th></tr>
-            <tr><td>test_direct_assignment_to_sink</td><td><code>email = get_email(); log(email)</code></td></tr>
-            <tr><td>test_name_variable_propagation</td><td>Taint via <code>x = name; send_analytics(x)</code></td></tr>
-            <tr><td>test_no_pii_no_leak</td><td>Only literals → no leak</td></tr>
-            <tr><td>test_pii_not_reaching_sink_no_leak</td><td>PII defined but safe value sent to sink</td></tr>
-            <tr><td>test_string_concatenation_propagates_taint</td><td><code>"User: " + email</code> is tainted</td></tr>
-            <tr><td>test_fstring_propagates_taint</td><td><code>f"Hello {name}"</code> is tainted</td></tr>
-            <tr><td>test_union_of_multiple_pii_types</td><td>email + name → both tags in leak</td></tr>
-            <tr><td>test_dict_value_propagates_taint</td><td><code>{"ssn": ssn}</code> carries taint</td></tr>
-            <tr><td>test_chained_assignment_propagates</td><td>4-step chain caught</td></tr>
-            <tr><td>test_augmented_assignment_propagates</td><td><code>msg += name</code> accumulates taint</td></tr>
-            <tr><td>test_multiple_leaks_reported</td><td>Two sinks → two separate Leak objects</td></tr>
-            <tr><td>test_taint_inside_if_branch</td><td>Leak inside <code>if</code> body detected</td></tr>
-            <tr><td>test_taint_inside_function_body</td><td>Leak inside <code>def f()</code> detected</td></tr>
-            <tr><td>test_custom_source_detected</td><td>Policy adds <code>fetch_passport</code> as source</td></tr>
-            <tr><td>test_custom_sink_detected</td><td>Policy adds <code>kafka_publish</code> as sink</td></tr>
-            <tr><td>test_unknown_sink_without_policy</td><td><code>kafka_publish</code> silent without policy</td></tr>
-            <tr><td>test_recommendation_for_log_sink</td><td>"Redact" message for log sinks</td></tr>
-            <tr><td>test_recommendation_for_analytics_sink</td><td>"Anonymize" message for analytics</td></tr>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- BUILT-IN REFERENCE -->
-  <section>
-    <div class="section-label">Reference</div>
-    <h2>Built-in sources &amp; sinks</h2>
-    <p>These are active by default with no policy file required.</p>
-
-    <h3>PII Sources</h3>
-    <table>
-      <tr><th>Function</th><th>PII Tag</th></tr>
-      <tr><td>get_email()</td><td>email</td></tr>
-      <tr><td>get_name()</td><td>name</td></tr>
-      <tr><td>get_ssn()</td><td>ssn</td></tr>
-      <tr><td>get_phone()</td><td>phone</td></tr>
-      <tr><td>get_address()</td><td>address</td></tr>
-      <tr><td>get_dob()</td><td>date_of_birth</td></tr>
-      <tr><td>get_user_id()</td><td>user_id</td></tr>
-    </table>
-
-    <h3>Sinks</h3>
-    <table>
-      <tr><th>Function</th><th>Recommendation</th></tr>
-      <tr><td>log</td><td>Redact PII before logging</td></tr>
-      <tr><td>send_analytics</td><td>Anonymize before sending to analytics</td></tr>
-      <tr><td>send_to_api</td><td>Remove PII before sending to external sink</td></tr>
-      <tr><td>print_log</td><td>Redact PII before logging</td></tr>
-      <tr><td>write_log</td><td>Redact PII before logging</td></tr>
-      <tr><td>post_to_server</td><td>Remove PII before sending to external sink</td></tr>
-    </table>
-    <p>Any function whose name contains <code>log</code>, <code>analytics</code>, <code>api</code>, <code>server</code>, <code>report</code>, <code>track</code>, or <code>monitor</code> is also matched as a sink.</p>
-  </section>
-
-</div><!-- /container -->
-
-<footer>
-  <p>CS 336 · Project 9 · Team 9 — Monmouth University</p>
-  <p style="margin-top:.35rem;">Justin Veltri · Flavia Daniels · Arnav Vasa · Garrett Boag · Jonathan Veltri</p>
-</footer>
+<hr />
+<p style="color:#999; font-size:.85rem;">CS 336 &middot; Project 9 &middot; Team 9 &mdash; Justin Veltri, Flavia Daniels, Arnav Vasa, Garrett Boag, Jonathan Veltri</p>
 
 </body>
 </html>
